@@ -2,7 +2,9 @@
 package app
 
 import (
+	"fmt"
 	"log"
+	"net/http"
 	"os"
 )
 
@@ -23,4 +25,12 @@ func NewApplication() (*Application, error) {
 		Logger: logger,
 	}
 	return app, nil
+}
+
+// http.ResponseWriter 实际上是一个接口（Interface），而不是一个结构体（Struct）。
+// 接口变量：http.ResponseWriter 就像是一个盒子，里面已经装着那个指针了。
+// 3. 调用方法会变得很麻烦 接口的设计初衷是让你直接调用它的方法。
+
+func (app *Application) HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Status is available\n")
 }
