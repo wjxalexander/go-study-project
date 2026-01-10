@@ -21,6 +21,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	defer app.DB.Close() // Close the database connection when the server shuts down
 	app.Logger.Printf("Starting server on port %d", port)
 
 	// 1. 先注册路由 replace with chi

@@ -2,17 +2,20 @@
 package app
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 
 	"github.com/jingxinwangdev/go-prject/internal/api"
+	"github.com/jingxinwangdev/go-prject/internal/store"
 )
 
 type Application struct {
 	Logger         *log.Logger
 	WorkoutHandler *api.WorkoutHandler
+	DB             *sql.DB
 }
 
 /**
@@ -23,11 +26,16 @@ type Application struct {
  */
 
 func NewApplication() (*Application, error) {
+	pbDb, err := store.Open()
+	if err != nil {
+		return nil, fmt.Errorf("failed to open database: %w", err)
+	}
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
 	workoutHandler := api.NewWorkoutHandler()
 	app := &Application{
 		Logger:         logger,
 		WorkoutHandler: workoutHandler,
+		DB:             pbDb,
 	}
 	return app, nil
 }
