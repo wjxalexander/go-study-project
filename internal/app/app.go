@@ -10,6 +10,7 @@ import (
 
 	"github.com/jingxinwangdev/go-prject/internal/api"
 	"github.com/jingxinwangdev/go-prject/internal/store"
+	"github.com/jingxinwangdev/go-prject/migrations"
 )
 
 type Application struct {
@@ -31,6 +32,10 @@ func NewApplication() (*Application, error) {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
+	err = store.MigrateFS(pbDb, migrations.FS, ".")
+	if err != nil {
+		return nil, fmt.Errorf("failed to migrate database: %w", err)
+	}
 	workoutHandler := api.NewWorkoutHandler()
 	app := &Application{
 		Logger:         logger,
