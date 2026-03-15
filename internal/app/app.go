@@ -36,7 +36,8 @@ func NewApplication() (*Application, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to migrate database: %w", err)
 	}
-	workoutHandler := api.NewWorkoutHandler()
+	pgWorkoutStore := store.NewPostgresWorkoutStore(pbDb)
+	workoutHandler := api.NewWorkoutHandler(pgWorkoutStore)
 	app := &Application{
 		Logger:         logger,
 		WorkoutHandler: workoutHandler,
