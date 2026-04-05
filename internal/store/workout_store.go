@@ -18,7 +18,7 @@ type WorkoutEntry struct {
 	Reps            *int     `json:"reps"` //在 Web API 和数据库映射中，当一个字段是可选的（Optional）或者允许数据库存为 NULL 时
 	DurationSeconds *int     `json:"duration_seconds"`
 	Weight          *float64 `json:"weight"`
-	Notes           *string  `json:"notes"`
+	Notes           string   `json:"notes"`
 	OrderIndex      int      `json:"order_index"`
 }
 
