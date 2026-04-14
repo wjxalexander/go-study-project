@@ -2,14 +2,37 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 
-	_ "golang.org/x/crypto/bcrypt"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type passwordHash struct {
-	plaintext string
+	plaintext *string
 	hash      []byte
+}
+
+// struct has it's own methods
+func (p *passwordHash) Set(plaintext string) error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(plaintext), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	p.plaintext = &plaintext
+	p.hash = hash
+	return nil
+}
+
+func (p *passwordHash) Compare(plaintext string) (bool, error) {
+	err := bcrypt.CompareHashAndPassword(p.hash, []byte(plaintext))
+	if err != nil {
+		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }
 
 type User struct {
@@ -71,13 +94,18 @@ func (pg *PostgresUserStore) GetUserByUsername(username string) (*User, error) {
 
 func (pg *PostgresUserStore) UpdateUser(user *User) error {
 	query := `UPDATE users 
-	SET username = $1, email = $2, password_hash = $3, bio = $4, updated_at = $5 
-	WHERE id = $6
-	RETURNING updated_at`
-
-	_, err := pg.db.Exec(query, user.Username, user.Email, user.PasswordHash.hash, user.Bio, user.UpdatedAt, user.ID)
+	SET username = $1, email = $2, password_hash = $3, bio = $4, updated_at = CURRENT_TIMESTAMP 
+	WHERE id = $5`
+	result, err := pg.db.Exec(query, user.Username, user.Email, user.PasswordHash.hash, user.Bio, user.ID)
 	if err != nil {
 		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
 	}
 	return nil
 }

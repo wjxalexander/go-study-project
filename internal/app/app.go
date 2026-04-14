@@ -16,6 +16,8 @@ import (
 type Application struct {
 	Logger         *log.Logger
 	WorkoutHandler *api.WorkoutHandler
+	UserHandler    *api.UserHandler
+	TokenHandler   *api.TokenHandler
 	DB             *sql.DB
 }
 
@@ -37,10 +39,18 @@ func NewApplication() (*Application, error) {
 		return nil, fmt.Errorf("failed to migrate database: %w", err)
 	}
 	pgWorkoutStore := store.NewPostgresWorkoutStore(pbDb)
+	pgUserStore := store.NewPostgresUserStore(pbDb)
+	pgTokenStore := store.NewPostgresTokenStore(pbDb)
+
 	workoutHandler := api.NewWorkoutHandler(pgWorkoutStore, logger)
+	userHandler := api.NewUserHandler(pgUserStore, logger)
+	tokenHandler := api.NewTokenHandler(pgTokenStore, pgUserStore, logger)
+
 	app := &Application{
 		Logger:         logger,
 		WorkoutHandler: workoutHandler,
+		UserHandler:    userHandler,
+		TokenHandler:   tokenHandler,
 		DB:             pbDb,
 	}
 	return app, nil
