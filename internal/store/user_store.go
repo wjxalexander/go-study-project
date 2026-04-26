@@ -1,6 +1,7 @@
 package store
 
 import (
+	"crypto/sha256"
 	"database/sql"
 	"errors"
 	"time"
@@ -58,6 +59,7 @@ type UserStore interface {
 	GetUserByUsername(username string) (*User, error)
 	UpdateUser(user *User) error
 	// DeleteUser(id int64) error
+	GetUserToken(scope, plaintext string) (*User, error)
 }
 
 // No transaction needed here — a single SQL statement is already atomic.
@@ -108,4 +110,39 @@ func (pg *PostgresUserStore) UpdateUser(user *User) error {
 		return sql.ErrNoRows
 	}
 	return nil
+}
+
+var AnonymousUser = &User{}
+
+func (u *User) IsAnonymous() bool {
+	return u == AnonymousUser
+}
+
+func (s *PostgresUserStore) GetUserToken(scope, plaintext string) (*User, error) {
+	tokenHash := sha256.Sum256([]byte(plaintext))
+	query := `
+	SELECT u.id, u.username, u.email, u.password_hash, u.bio, u.created_at, u.updated_at 
+	FROM users as u
+	INNER JOIN tokens as t ON users.id = tokens.user_id
+	WHERE tokens.hash = $1 AND tokens.scope = $2 AND tokens.expiry > $3
+	`
+	user := &User{
+		PasswordHash: passwordHash{},
+	}
+	err := s.db.QueryRow(query, tokenHash[:], scope, time.Now()).Scan(
+		&user.ID,
+		&user.Username,
+		&user.Email,
+		&user.PasswordHash.hash,
+		&user.Bio,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
 }
